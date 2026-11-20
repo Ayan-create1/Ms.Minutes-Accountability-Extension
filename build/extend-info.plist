@@ -6,5 +6,9 @@
   <true/>
   <key>NSHumanReadableCopyright</key>
   <string>Personal use</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Ms. Minutes listens only while her mic is open, so you can log assignments by voice.</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>Ms. Minutes turns your voice commands into text on this Mac. Nothing is sent online.</string>
 </dict>
 </plist>

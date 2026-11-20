@@ -7,7 +7,8 @@
   "private": true,
   "scripts": {
     "start": "env -u ELECTRON_RUN_AS_NODE electron .",
-    "package": "env -u ELECTRON_RUN_AS_NODE electron-packager . \"Ms. Minutes\" --platform=darwin --out=dist --overwrite --extend-info=build/extend-info.plist --ignore=\"^/(dist|assets|scripts|.*\\.zip)\""
+    "build:listener": "sh scripts/build-listener.sh",
+    "package": "sh scripts/package.sh"
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",

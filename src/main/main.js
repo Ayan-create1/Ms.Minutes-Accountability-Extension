@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const T = require('../shared/timeline');
 const { createTrayIcon } = require('./trayIcon');
+const voice = require('./voice');
 
 // Dev-only: MINUTES_USER_DATA isolates storage, MINUTES_SNAPSHOT=<dir> renders screenshots then exits.
 if (process.env.MINUTES_USER_DATA) app.setPath('userData', process.env.MINUTES_USER_DATA);
@@ -12,6 +13,7 @@ const SNAPSHOT_DIR = process.env.MINUTES_SNAPSHOT || null;
 const WIN_W = 440;
 const WIN_H_MAX = 800;
 const SHORTCUT = 'Control+Alt+M';
+const VOICE_SHORTCUT = 'Control+Alt+V'; // ⌃⌥Space is taken by macOS input-source switching
 const NOTIFY_GAP_MS = 5 * 60 * 1000; // never more than one notification per 5 minutes
 
 let win = null;
@@ -134,6 +136,7 @@ function rebuildTrayMenu() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: visible ? 'Hide Ms. Minutes' : 'Show Ms. Minutes', accelerator: SHORTCUT, registerAccelerator: false, click: toggleWindow },
     { label: 'Open Assignment Terminal', click: () => showWindow(true) },
+    { label: 'Speak to Ms. Minutes', accelerator: VOICE_SHORTCUT, registerAccelerator: false, click: voiceHotkey },
     { type: 'separator' },
     {
       label: app.isPackaged ? 'Launch at Login' : 'Launch at Login (packaged app only)',
@@ -271,11 +274,18 @@ function startScheduler() {
   powerMonitor.on('unlock-screen', tickSoon);
 }
 
+// ---------- voice ----------
+function voiceHotkey() {
+  if (!win) return;
+  showWindow(true);
+  win.webContents.send('voice:hotkey');
+}
+
 // ---------- IPC ----------
 function registerIpc() {
   ipcMain.handle('state:get', () => ({
     data,
-    env: { isPackaged: app.isPackaged, snapshot: !!SNAPSHOT_DIR, shortcut: '⌃⌥M' },
+    env: { isPackaged: app.isPackaged, snapshot: !!SNAPSHOT_DIR, shortcut: '⌃⌥M', voiceShortcut: '⌃⌥V' },
   }));
   ipcMain.on('state:save', (_e, next) => {
     if (!next || !Array.isArray(next.tasks)) return;
@@ -312,6 +322,10 @@ function registerIpc() {
   ipcMain.on('window:hide', hideWindow);
   ipcMain.on('window:reset', resetPosition);
   ipcMain.on('app:quit', () => { quitting = true; app.quit(); });
+  ipcMain.handle('voice:start', () => voice.start((ev) => win && !win.isDestroyed() && win.webContents.send('voice:event', ev)));
+  ipcMain.on('voice:stop', () => voice.stop());
+  ipcMain.on('voice:cancel', () => voice.cancel());
+  ipcMain.on('voice:privacy', (_e, kind) => voice.openPrivacy(kind));
 }
 
 // ---------- dev snapshots ----------
@@ -343,6 +357,11 @@ async function runSnapshots() {
   await shot('modal-postpone');
   await js(`window.__debug.closeModal(); window.__debug.modal('prune')`);
   await shot('modal-prune');
+  await js(`window.__debug.closeModal()`);
+  for (const v of ['listening', 'create', 'create-guess', 'done', 'pick', 'query', 'unknown', 'error-mic']) {
+    await js(`window.__debug.voice(${JSON.stringify(v)})`);
+    await shot(`voice-${v}`, 1100);
+  }
   app.exit(0);
 }
 
@@ -360,10 +379,11 @@ if (!SNAPSHOT_DIR && !app.requestSingleInstanceLock()) {
     createWindow();
     rebuildTrayMenu();
     globalShortcut.register(SHORTCUT, toggleWindow);
+    globalShortcut.register(VOICE_SHORTCUT, voiceHotkey);
     screen.on('display-metrics-changed', reclamp);
     screen.on('display-removed', reclamp);
   });
-  app.on('before-quit', () => { quitting = true; });
+  app.on('before-quit', () => { quitting = true; voice.cancel(); });
   app.on('will-quit', () => globalShortcut.unregisterAll());
   app.on('window-all-closed', () => { /* keep running in the menu bar */ });
 }

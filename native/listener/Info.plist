@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>com.msminutes.listener</string>
+  <key>CFBundleName</key>
+  <string>Ms. Minutes Listener</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Ms. Minutes listens only while you hold her mic open, so you can log assignments by voice.</string>
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>Ms. Minutes turns your voice commands into text on this Mac. Nothing is sent online.</string>
+</dict>
+</plist>

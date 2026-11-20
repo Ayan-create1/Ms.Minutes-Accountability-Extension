@@ -266,22 +266,25 @@ function openPanel(view) {
   }
   api.focus();
   renderAll();
-  if (ui.view === 'timeline' && $('#modal').hidden) setTimeout(() => $('#add-title').focus(), 80);
+  if (ui.view === 'timeline' && $('#modal').hidden && $('#voice').hidden) setTimeout(() => { if ($('#voice').hidden) $('#add-title').focus(); }, 80);
 }
 function closePanel() {
   if (!ui.panelOpen) return;
   ui.panelOpen = false;
   closeModal();
+  if (window.VoiceUI) VoiceUI.cancel(true);
   panel.classList.add('closing');
   setTimeout(() => { if (!ui.panelOpen) { panel.hidden = true; panel.classList.remove('closing'); } }, 170);
 }
 $('#panel-close').addEventListener('click', closePanel);
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('#modal').hidden) closeModal();
+  if (window.VoiceUI && VoiceUI.isOpen()) VoiceUI.cancel();
+  else if (!$('#modal').hidden) closeModal();
   else closePanel();
 });
 function switchView(view) {
+  if (window.VoiceUI && VoiceUI.isOpen()) VoiceUI.cancel(true);
   ui.view = view;
   for (const v of ['timeline', 'records', 'settings']) $(`#view-${v}`).hidden = v !== view;
   $$('.key').forEach((k) => k.classList.toggle('active', k.dataset.view === view));
@@ -335,17 +338,21 @@ $('#add-form').addEventListener('submit', (e) => {
   // Re-resolve a relative preset at submit time so "+1 hr" means an hour from now.
   const due = ui.preset ? presetTime(ui.preset, now) : fromLocalInput($('#add-due').value);
   if (!due || due <= now + 60e3) { addError("That deadline's already passed. That's how Nexus events happen."); return; }
-  const task = { id: uid(), title, createdAt: now, dueAt: due, status: 'active', postponements: [] };
-  state.tasks.push(task);
-  save();
+  addTask(title, due);
   $('#add-title').value = '';
   $('#add-error').textContent = '';
   resetAddForm();
+});
+function addTask(title, due) {
+  const task = { id: uid(), title, createdAt: Date.now(), dueAt: due, status: 'active', postponements: [] };
+  state.tasks.push(task);
+  save();
   renderTasks();
   say(lineFor('added', task), { duration: 4500 });
   wave();
   tick();
-});
+  return task;
+}
 
 function stageClass(st) { return `task s${Math.max(0, st)}`; }
 
@@ -506,11 +513,12 @@ function reasonField(onInput) {
   return { ta, counter, update, valid: () => ta.value.trim().length >= MIN_REASON };
 }
 
-function openPostponeModal(t) {
+/** `prefill` (from a voice command) can carry a proposed deadline and the spoken reason. */
+function openPostponeModal(t, prefill = {}) {
   const now = Date.now();
   const overdue = now > t.dueAt;
   const rel = Math.max(now, t.dueAt);
-  const input = h('input', { type: 'datetime-local', value: toLocalInput(presetTime('+1h', now, rel)) });
+  const input = h('input', { type: 'datetime-local', value: toLocalInput(prefill.due || presetTime('+1h', now, rel)) });
   const submit = h('button', { type: 'button', class: 'btn-primary', disabled: true, text: 'Submit to the Time-Keepers' });
   const chips = h('div', { class: 'chips' });
   const validate = () => {
@@ -518,7 +526,7 @@ function openPostponeModal(t) {
     submit.disabled = !(reason.valid() && due && due > Date.now() + 60e3 && due !== t.dueAt);
   };
   const reason = reasonField(validate);
-  renderChips(chips, ['+1h', '+3h', '9pm', 'tmr9'], (k) => { input.value = toLocalInput(presetTime(k, Date.now(), Math.max(Date.now(), t.dueAt))); validate(); }, '+1h');
+  renderChips(chips, ['+1h', '+3h', '9pm', 'tmr9'], (k) => { input.value = toLocalInput(presetTime(k, Date.now(), Math.max(Date.now(), t.dueAt))); validate(); }, prefill.due ? null : '+1h');
   input.addEventListener('input', () => { $$('.chip', chips).forEach((c) => c.classList.remove('on')); validate(); });
   submit.addEventListener('click', () => {
     const due = fromLocalInput(input.value);
@@ -531,9 +539,10 @@ function openPostponeModal(t) {
     say(lineFor('postponed', t), { duration: 5000 });
     tick();
   });
+  if (prefill.reason) reason.ta.value = prefill.reason;
   reason.update();
   showModal(h('div', { class: 'form' },
-    h('div', { class: 'form-no', text: 'FORM TVA-77B' }),
+    h('div', { class: 'form-no', text: prefill.voice ? 'FORM TVA-77B · VOICE-FILED' : 'FORM TVA-77B' }),
     h('h3', { text: 'Timeline extension request' }),
     h('div', { class: 'subject', text: `"${t.title}" · currently due ${T.formatDue(t.dueAt, now)}` }),
     h('label', { text: 'NEW DEADLINE' }), chips, input,
@@ -803,6 +812,7 @@ function installDebug() {
       ta.dispatchEvent(new Event('input'));
     },
     closeModal,
+    voice(kind) { window.VoiceUI && VoiceUI.debug(kind); },
   };
 }
 
