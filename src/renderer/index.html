@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:">
+  <title>Ms. Minutes</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="stage">
+
+  <!-- ===================== ASSIGNMENT TERMINAL ===================== -->
+  <section id="panel" class="hit" hidden aria-label="TVA assignment terminal">
+    <div class="bezel">
+      <header class="bezel-top">
+        <div class="tva-logo" aria-hidden="true"><span>TVA</span></div>
+        <div class="bezel-title">
+          <div class="eyebrow">Time Variance Authority</div>
+          <div class="model">Assignment Terminal</div>
+        </div>
+        <div class="clock" id="clock">--:--</div>
+        <button class="icon-btn" id="panel-close" title="Close terminal (Esc)" aria-label="Close terminal">×</button>
+      </header>
+
+      <div class="screen">
+        <div class="screen-inner" id="screen-inner">
+          <div id="banner" class="banner" hidden></div>
+
+          <!-- Timeline -->
+          <div id="view-timeline" class="view">
+            <div class="status-line"><span>TIMELINE STATUS: <b id="tl-status">NOMINAL</b></span><span id="tl-count">0 ACTIVE</span></div>
+            <form id="add-form" autocomplete="off">
+              <label class="prompt" for="add-title">&gt; NEW ASSIGNMENT<span class="cursor">_</span></label>
+              <input id="add-title" maxlength="120" placeholder="What must be done?" spellcheck="false">
+              <div class="chips" id="due-chips"></div>
+              <div class="due-row">
+                <span>DUE</span>
+                <input type="datetime-local" id="add-due">
+                <button type="submit" class="btn-primary">Log it</button>
+              </div>
+              <div class="error" id="add-error" role="alert"></div>
+            </form>
+            <div id="task-list"></div>
+            <details id="done-today">
+              <summary>COMPLETED TODAY (<span id="done-count">0</span>)</summary>
+              <div id="done-list"></div>
+            </details>
+          </div>
+
+          <!-- Records -->
+          <div id="view-records" class="view" hidden>
+            <div class="status-line"><span>PERMANENT RECORD</span><span>FILE #<span id="file-no">0000</span></span></div>
+            <div class="tiles" id="tiles"></div>
+            <div class="week-title">LAST 7 DAYS · <span class="k-ok">■</span> ON TIME <span class="k-bad">■</span> MISSED</div>
+            <div class="week" id="week"></div>
+            <div class="week-labels" id="week-labels"></div>
+            <div class="section-title">EXCUSES ON FILE</div>
+            <ul class="log" id="log"></ul>
+          </div>
+
+          <!-- Settings -->
+          <div id="view-settings" class="view" hidden>
+            <div class="status-line"><span>CONFIGURATION</span><span>FORM TVA-SET</span></div>
+            <label class="setting">
+              <span>Notifications<small>Always silent · max one every 5 min</small></span>
+              <select id="set-notifications">
+                <option value="all">75%, 90% &amp; overdue</option>
+                <option value="urgent">90% &amp; overdue</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+            <label class="setting">
+              <span>Quiet hours<small>No notifications at all</small></span>
+              <input type="checkbox" class="toggle" id="set-quiet">
+            </label>
+            <div class="setting sub">
+              <span>From</span><input type="time" id="set-quiet-start"><span>to</span><input type="time" id="set-quiet-end">
+            </div>
+            <label class="setting">
+              <span>Daily check-ins<small>Morning briefing &amp; evening review</small></span>
+              <input type="checkbox" class="toggle" id="set-checkins">
+            </label>
+            <div class="setting sub">
+              <span>Morning</span><input type="time" id="set-morning"><span>Evening</span><input type="time" id="set-evening">
+            </div>
+            <label class="setting">
+              <span>Return when overdue<small>Un-hides Ms. Minutes if a deadline passes</small></span>
+              <input type="checkbox" class="toggle" id="set-return">
+            </label>
+            <label class="setting">
+              <span>Launch at login<small id="login-hint"></small></span>
+              <input type="checkbox" class="toggle" id="set-login">
+            </label>
+            <div class="setting-actions">
+              <button type="button" class="btn-ghost" id="btn-reset-pos">Reset position</button>
+              <button type="button" class="btn-ghost" id="btn-hide">Hide</button>
+              <button type="button" class="btn-ghost danger" id="btn-quit">Quit</button>
+            </div>
+            <p class="hint">Show or hide her anytime with <b>⌃⌥M</b> (Control-Option-M) or the clock icon in your menu bar. Drag her to move.</p>
+          </div>
+        </div>
+        <div id="modal" hidden></div>
+        <div class="scanlines" aria-hidden="true"></div>
+      </div>
+
+      <nav class="keys">
+        <button class="key active" data-view="timeline">Timeline</button>
+        <button class="key" data-view="records">Records</button>
+        <button class="key" data-view="settings">Settings</button>
+        <span class="led" id="status-led" title="Timeline status"></span>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ===================== SPEECH BUBBLE ===================== -->
+  <div id="bubble" class="hit" hidden role="status">
+    <span class="who">MS. MINUTES</span>
+    <span id="bubble-text"></span>
+  </div>
+
+  <!-- ===================== MS. MINUTES ===================== -->
+  <div id="minutes-wrap" class="hit" data-mood="happy">
+    <button id="hide-btn" title="Hide (⌃⌥M)" aria-label="Hide Ms. Minutes">×</button>
+    <svg id="minutes" viewBox="0 0 200 236" role="img" aria-label="Ms. Minutes">
+      <defs>
+        <radialGradient id="faceGrad" gradientUnits="userSpaceOnUse" cx="84" cy="74" r="100">
+          <stop offset="0" class="fs1"/>
+          <stop offset="0.6" class="fs2"/>
+          <stop offset="1" class="fs3"/>
+        </radialGradient>
+        <clipPath id="clipEyeL"><ellipse cx="76" cy="78" rx="14.5" ry="20"/></clipPath>
+        <clipPath id="clipEyeR"><ellipse cx="124" cy="78" rx="14.5" ry="20"/></clipPath>
+      </defs>
+
+      <ellipse class="floor" cx="101" cy="230" rx="44" ry="5"/>
+
+      <g id="sparkles">
+        <g transform="translate(26 26)"><path class="spark s1" d="M0-8L2.2-2.2L8 0L2.2 2.2L0 8L-2.2 2.2L-8 0L-2.2-2.2Z"/></g>
+        <g transform="translate(182 60)"><path class="spark s2" d="M0-6L1.7-1.7L6 0L1.7 1.7L0 6L-1.7 1.7L-6 0L-1.7-1.7Z"/></g>
+        <g transform="translate(176 188)"><path class="spark s3" d="M0-7L2-2L7 0L2 2L0 7L-2 2L-7 0L-2-2Z"/></g>
+      </g>
+
+      <g id="bob"><g id="shake">
+        <!-- legs & shoes -->
+        <path class="leg" d="M90 160 L85 215"/>
+        <path class="leg" d="M112 160 L117 215"/>
+        <path class="shoe shoe-l" d="M84 212 Q93 212 93 220 L93 228 L65 228 Q63 219 72 216.5 Q78 212 84 212Z"/>
+        <path class="shoe shoe-r" d="M118 212 Q109 212 109 220 L109 228 L137 228 Q139 219 130 216.5 Q124 212 118 212Z"/>
+
+        <!-- arm on hip (her left, viewer's right) -->
+        <g class="arm arm-r">
+          <path class="arm-o" d="M158 110 C196 106 206 136 181 149"/>
+          <path class="arm-i" d="M158 110 C196 106 206 136 181 149"/>
+        </g>
+
+        <!-- her right arm: three poses -->
+        <g class="arm arm-l-point var">
+          <path class="arm-o" d="M46 102 C26 95 20 80 21 60"/>
+          <path class="arm-i" d="M46 102 C26 95 20 80 21 60"/>
+          <path class="cuff" d="M14.5 62 L27.5 62 M15 66 L27 66"/>
+          <rect class="glove" x="17" y="22" width="8" height="24" rx="4"/>
+          <circle class="glove" cx="21" cy="49" r="9.5"/>
+          <path class="knuckle" d="M14 47 Q18 50 22 47"/>
+        </g>
+        <g class="arm arm-l-hip var">
+          <path class="arm-o" d="M44 112 C14 110 8 134 26 145"/>
+          <path class="arm-i" d="M44 112 C14 110 8 134 26 145"/>
+          <circle class="glove" cx="29" cy="147" r="8.5"/>
+        </g>
+        <g class="arm arm-l-fist var">
+          <path class="arm-o" d="M46 100 C28 90 22 74 24 56"/>
+          <path class="arm-i" d="M46 100 C28 90 22 74 24 56"/>
+          <circle class="glove" cx="24" cy="46" r="11"/>
+          <path class="knuckle" d="M16 42 L32 42 M16 47 L32 47"/>
+        </g>
+
+        <!-- body: coin-like clock -->
+        <circle class="rim" cx="108" cy="100" r="70"/>
+        <circle class="face" cx="100" cy="98" r="70"/>
+        <circle class="face-inner" cx="100" cy="98" r="50"/>
+        <g id="ticks"></g>
+        <g id="hands">
+          <line id="hand-h" x1="100" y1="98" x2="100" y2="84"/>
+          <line id="hand-m" x1="100" y1="98" x2="100" y2="76"/>
+        </g>
+        <g class="blush"><ellipse cx="59" cy="110" rx="9" ry="5"/><ellipse cx="141" cy="110" rx="9" ry="5"/></g>
+
+        <g class="lashes">
+          <path d="M66 63 q-5 -4 -6 -10"/><path d="M71 59.5 q-2 -5 -1.5 -10"/><path d="M77 58 q0 -5 2.5 -9.5"/>
+          <path d="M134 63 q5 -4 6 -10"/><path d="M129 59.5 q2 -5 1.5 -10"/><path d="M123 58 q0 -5 -2.5 -9.5"/>
+        </g>
+        <g class="eye eye-l">
+          <ellipse class="sclera" cx="76" cy="78" rx="14.5" ry="20"/>
+          <g class="pupil"><ellipse class="iris" cx="78" cy="83" rx="8" ry="12"/><ellipse class="glint" cx="81" cy="77" rx="2.2" ry="4.2" transform="rotate(22 81 77)"/></g>
+          <g clip-path="url(#clipEyeL)"><rect class="lid lid-l" x="54" y="30" width="44" height="28"/></g>
+          <ellipse class="sclera-line" cx="76" cy="78" rx="14.5" ry="20"/>
+        </g>
+        <g class="eye eye-r">
+          <ellipse class="sclera" cx="124" cy="78" rx="14.5" ry="20"/>
+          <g class="pupil"><ellipse class="iris" cx="126" cy="83" rx="8" ry="12"/><ellipse class="glint" cx="129" cy="77" rx="2.2" ry="4.2" transform="rotate(22 129 77)"/></g>
+          <g clip-path="url(#clipEyeR)"><rect class="lid lid-r" x="102" y="30" width="44" height="28"/></g>
+          <ellipse class="sclera-line" cx="124" cy="78" rx="14.5" ry="20"/>
+        </g>
+        <circle class="nose" cx="100" cy="98" r="3.6"/>
+
+        <g class="brows var b-skeptical"><path d="M63 55 Q76 51 89 56"/><path d="M111 47 Q124 37 138 46"/></g>
+        <g class="brows var b-annoyed"><path d="M61 51 Q76 51 90 59"/><path d="M110 59 Q124 51 139 51"/></g>
+        <g class="brows var b-angry"><path d="M59 47 L91 63"/><path d="M109 63 L141 47"/></g>
+
+        <path class="mouth var m-happy" d="M81 117 Q100 124 119 117 Q115 135 100 136 Q85 135 81 117Z"/>
+        <g class="mouth var m-proud">
+          <path class="mouth-dark" d="M77 114 Q100 122 123 114 Q119 142 100 143 Q81 142 77 114Z"/>
+          <path class="tongue" d="M89 135 Q100 128 111 135 Q100 142.5 89 135Z"/>
+          <path class="teeth" d="M79.5 115.5 Q100 123 120.5 115.5 L119.6 120 Q100 127 80.4 120Z"/>
+        </g>
+        <path class="mouth var line m-skeptical" d="M84 126 Q92 120 101 125 T118 121"/>
+        <path class="mouth var line m-annoyed" d="M86 129 Q100 124 114 130"/>
+        <g class="mouth var m-angry">
+          <path class="teeth" d="M81 135 Q100 117 119 135 Q100 129 81 135Z"/>
+          <path class="teeth-line" d="M93 126.5 L93 131.5 M100 125.5 L100 131 M107 126.5 L107 131.5"/>
+        </g>
+        <g class="mouth var m-furious">
+          <ellipse class="mouth-dark" cx="100" cy="131" rx="13" ry="11"/>
+          <path class="tongue" d="M90 137 Q100 129 110 137 Q100 142 90 137Z"/>
+          <path class="teeth" d="M89 124.5 Q100 120 111 124.5 L110 128 Q100 124.5 90 128Z"/>
+        </g>
+
+        <circle class="glove glove-front" cx="179" cy="151" r="8.5"/>
+
+        <g id="steam">
+          <g transform="translate(44 34)"><g class="puff p1"><circle r="6"/><circle cx="7" cy="-3" r="5"/><circle cx="2" cy="-9" r="4.5"/></g></g>
+          <g transform="translate(158 36)"><g class="puff p2"><circle r="6"/><circle cx="-7" cy="-3" r="5"/><circle cx="-2" cy="-9" r="4.5"/></g></g>
+          <g transform="translate(100 22)"><g class="puff p3"><circle r="5"/><circle cx="6" cy="-4" r="4"/><circle cx="-5" cy="-5" r="4"/></g></g>
+        </g>
+      </g></g>
+
+      <g id="alert" transform="translate(170 20)"><g class="alert-inner"><circle r="13"/><text y="6.5" text-anchor="middle">!</text></g></g>
+    </svg>
+  </div>
+</div>
+
+<script src="../shared/timeline.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

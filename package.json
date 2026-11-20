@@ -1,0 +1,16 @@
+{
+  "name": "ms-minutes",
+  "productName": "Ms. Minutes",
+  "version": "1.0.0",
+  "description": "A TVA-style desktop accountability companion that gets angrier as your deadlines approach.",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "package": "env -u ELECTRON_RUN_AS_NODE electron-packager . \"Ms. Minutes\" --platform=darwin --out=dist --overwrite --extend-info=build/extend-info.plist --ignore=\"^/(dist|assets|scripts|.*\\.zip)\""
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.4.1"
+  }
+}
